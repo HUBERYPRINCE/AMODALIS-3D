@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大象无形 · 高维 BLEND ART 视觉展厅</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2379A69D'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%232A1713' stroke-width='4' stroke-dasharray='28 18'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23F6ECD7'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --wall: #79A69D;
+      --ink: #2A1713;
+      --ink-muted: rgba(42, 23, 19, 0.72);
+      --ink-faint: rgba(42, 23, 19, 0.22);
+      --cream: #F8EED8;
+      --surface-soft: rgba(42, 23, 19, 0.065);
+      --surface-code: rgba(42, 23, 19, 0.09);
+      --btn-bg: #2A1713;
+      --btn-fg: #F8EED8;
+      --serif: "Noto Serif SC", "Songti SC", "STSong", "Hiragino Mincho ProN", Georgia, serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body[data-theme="dark-wall"] {
+      --ink: #FAF2DE;
+      --ink-muted: rgba(250, 242, 222, 0.80);
+      --ink-faint: rgba(250, 242, 222, 0.26);
+      --surface-soft: rgba(42, 23, 19, 0.18);
+      --surface-code: rgba(42, 23, 19, 0.30);
+      --btn-bg: #FAF2DE;
+      --btn-fg: #2A1713;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--wall);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.72;
+      min-height: 100vh;
+      transition: background-color 0.75s var(--ease), color 0.45s var(--ease);
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle analog paper tooth matching Syoyo's matte gouache print feel */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Navigation Header */
+    .topbar {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px 40px 18px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid var(--ink-faint);
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .brand span {
+      font-size: 0.85rem;
+      color: var(--ink-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 0.88rem;
+    }
+
+    .nav-links a {
+      color: var(--ink-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      color: var(--ink);
+      outline: none;
+      text-decoration: underline;
+      text-underline-offset: 5px;
+    }
+
+    /* Plate Switcher Bar */
+    .plate-nav {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 18px 40px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .plate-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .plate-tab {
+      appearance: none;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ink-muted);
+      font-family: var(--sans);
+      font-size: 0.88rem;
+      padding: 7px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s var(--ease);
+    }
+
+    .plate-tab:hover {
+      color: var(--ink);
+      background: var(--surface-soft);
+    }
+
+    .plate-tab[aria-selected="true"] {
+      color: var(--ink);
+      border-color: var(--ink);
+      background: var(--surface-soft);
+      font-weight: 500;
+    }
+
+    .tab-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(42, 23, 19, 0.35);
+      flex-shrink: 0;
+    }
+
+    .stage-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ghost-btn {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--ink-faint);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      padding: 6px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ghost-btn:hover {
+      border-color: var(--ink);
+      background: var(--surface-soft);
+    }
+
+    .ghost-btn[aria-pressed="true"] {
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border-color: var(--btn-bg);
+    }
+
+    /* Main Exhibition Stage: Frameless BLEND ART Dissolution */
+    .stage {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 36px 40px 84px;
+      display: grid;
+      grid-template-columns: minmax(320px, 1.15fr) minmax(320px, 0.85fr);
+      gap: 64px;
+      align-items: center;
+    }
+
+    .artwork-canvas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .poster-wrap {
+      width: 100%;
+      max-width: 560px;
+      aspect-ratio: 896 / 1200;
+      position: relative;
+      transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease), padding 0.5s var(--ease), background-color 0.5s var(--ease);
+      cursor: zoom-in;
+    }
+
+    /* Seamless Wall Dissolution Mode (Default) */
+    .poster-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.38s ease;
+    }
+
+    /* Optional Framed Exhibition Print Mode */
+    .poster-wrap.is-framed {
+      background: #FBF4E4;
+      padding: 26px;
+      box-shadow: 0 28px 60px rgba(42, 23, 19, 0.22);
+    }
+
+    .poster-caption {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--ink-muted);
+      text-align: center;
+    }
+
+    /* Curatorial Placard */
+    .placard {
+      max-width: 480px;
+    }
+
+    .dimension-tag {
+      font-size: 0.85rem;
+      color: var(--ink-muted);
+      margin-bottom: 10px;
+    }
+
+    .placard h2 {
+      font-family: var(--serif);
+      font-size: clamp(1.9rem, 3vw, 2.55rem);
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+
+    .placard-en {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 1rem;
+      color: var(--ink-muted);
+      margin-bottom: 24px;
+    }
+
+    .epiphany-box {
+      padding: 18px 0;
+      border-top: 1px solid var(--ink-faint);
+      border-bottom: 1px solid var(--ink-faint);
+      margin-bottom: 24px;
+    }
+
+    .epiphany-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.03em;
+    }
+
+    .epiphany-text {
+      font-size: 0.94rem;
+      color: var(--ink-muted);
+      line-height: 1.8;
+    }
+
+    .meta-block {
+      margin-bottom: 22px;
+    }
+
+    .meta-label {
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+      margin-bottom: 8px;
+    }
+
+    .anchor-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+
+    .anchor-list li {
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .anchor-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.68em;
+      width: 6px;
+      height: 1px;
+      background: var(--ink);
+    }
+
+    /* Color Swatches */
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .swatch {
+      appearance: none;
+      background: var(--surface-soft);
+      border: 1px solid var(--ink-faint);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 11px 5px 7px;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .swatch:hover {
+      border-color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .swatch-chip {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(42, 23, 19, 0.3);
+    }
+
+    /* Prompt Actions */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 26px;
+    }
+
+    .primary-btn {
+      appearance: none;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: 1px solid var(--btn-bg);
+      font-family: var(--sans);
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+
+    .primary-btn:hover {
+      opacity: 0.88;
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    .prompt-drawer {
+      margin-top: 18px;
+      background: var(--surface-code);
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.65;
+      color: var(--ink);
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .prompt-drawer.open {
+      display: block;
+    }
+
+    /* Full Exhibition Overview Band */
+    .band {
+      background: #F6ECD7;
+      color: #2A1713;
+      border-top: 1px solid rgba(42, 23, 19, 0.12);
+    }
+
+    .band-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .band-header {
+      max-width: 680px;
+      margin-bottom: 44px;
+    }
+
+    .band-header h3 {
+      font-family: var(--serif);
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .band-header p {
+      font-size: 0.95rem;
+      color: rgba(42, 23, 19, 0.74);
+    }
+
+    .contact-sheet {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px;
+    }
+
+    .sheet-item {
+      background: transparent;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      color: #2A1713;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sheet-thumb {
+      width: 100%;
+      aspect-ratio: 896 / 1200;
+      overflow: hidden;
+      background: #EADEC2;
+      transition: transform 0.35s var(--ease);
+    }
+
+    .sheet-item:hover .sheet-thumb {
+      transform: translateY(-4px);
+    }
+
+    .sheet-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sheet-title {
+      font-family: var(--serif);
+      font-size: 1.02rem;
+      font-weight: 600;
+    }
+
+    .sheet-sub {
+      font-size: 0.82rem;
+      color: rgba(42, 23, 19, 0.68);
+    }
+
+    /* Grammar & Anchor Translation Matrix */
+    .grammar-band {
+      background: #EFE3C8;
+      color: #2A1713;
+      border-top: 1px solid rgba(42, 23, 19, 0.12);
+    }
+
+    .grammar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px 36px;
+      margin-bottom: 56px;
+    }
+
+    .grammar-item {
+      border-top: 1px solid rgba(42, 23, 19, 0.2);
+      padding-top: 16px;
+    }
+
+    .grammar-item h4 {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .grammar-pair {
+      font-size: 0.86rem;
+      color: rgba(42, 23, 19, 0.78);
+      line-height: 1.65;
+    }
+
+    .grammar-pair strong {
+      color: #2A1713;
+      font-weight: 600;
+    }
+
+    /* Reusable Formula Box */
+    .formula-box {
+      background: #F8EED8;
+      border: 1px solid rgba(42, 23, 19, 0.18);
+      padding: 28px 32px;
+      border-radius: 8px;
+    }
+
+    .formula-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .formula-head h4 {
+      font-family: var(--serif);
+      font-size: 1.18rem;
+    }
+
+    .formula-code {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.72;
+      color: #2A1713;
+      white-space: pre-wrap;
+    }
+
+    .dark-btn {
+      appearance: none;
+      background: #2A1713;
+      color: #F8EED8;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+
+    .dark-btn:hover {
+      opacity: 0.88;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(42, 23, 19, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      cursor: zoom-out;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-height: 92vh;
+      max-width: 92vw;
+      object-fit: contain;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #2A1713;
+      color: #F8EED8;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s var(--ease);
+      z-index: 300;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    footer {
+      background: #2A1713;
+      color: rgba(248, 238, 216, 0.78);
+      padding: 36px 40px;
+      font-size: 0.84rem;
+    }
+
+    .footer-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 980px) {
+      .stage {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding: 28px 24px 64px;
+      }
+      .placard {
+        max-width: 100%;
+      }
+      .contact-sheet {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .grammar-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .topbar, .plate-nav, .band-inner {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .contact-sheet,
+      .grammar-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>空象视觉 · AMODALIS 静态展厅</h1>
+      <span>Syoyo 负空间视觉语法升维四部曲</span>
+    </div>
+    <nav class="nav-links" aria-label="展厅导览">
+      <a href="./index.html" style="font-weight:600;border-bottom:1px solid currentColor;">进入 3D/4D 动态知觉引擎</a>
+      <a href="#stage">沉浸主展墙</a>
+      <a href="#tetralogy">四部曲全览</a>
+      <a href="#grammar">锚点法典与模板</a>
+    </nav>
+  </header>
+
+  <div class="plate-nav">
+    <div class="plate-tabs" role="tablist" aria-label="选择高维作品" id="plateTabs"></div>
+    <div class="stage-controls">
+      <button type="button" class="ghost-btn" id="frameToggle" aria-pressed="false">装裱对照</button>
+      <button type="button" class="ghost-btn" id="prevBtn" aria-label="上一幅">上一幅</button>
+      <button type="button" class="ghost-btn" id="nextBtn" aria-label="下一幅">下一幅</button>
+    </div>
+  </div>
+
+  <main id="stage" class="stage">
+    <div class="artwork-canvas">
+      <div class="poster-wrap" id="posterWrap" title="点击全屏欣赏">
+        <img id="stageImg" src="images/02_invisible_babel.jpg" alt="高维 BLEND ART 展品" />
+      </div>
+      <p class="poster-caption" id="posterCaption">墙面色彩已同步至作品实测纸色，海报边界与空间自然融为一体（点击图像可放大细看）</p>
+    </div>
+
+    <aside class="placard">
+      <div class="dimension-tag" id="dimTag"></div>
+      <h2 id="workTitle"></h2>
+      <div class="placard-en" id="workEn"></div>
+
+      <div class="epiphany-box">
+        <div class="epiphany-title">3 秒知觉跃迁路径</div>
+        <p class="epiphany-text" id="epiphanyText"></p>
+      </div>
+
+      <div class="meta-block">
+        <div class="meta-label">启用的格式塔闭合锚点</div>
+        <ul class="anchor-list" id="anchorList"></ul>
+      </div>
+
+      <div class="meta-block">
+        <div class="meta-label">实测色板（点击复制色值，零纯黑零纯白）</div>
+        <div class="swatches" id="swatchList"></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary-btn" id="copyPromptBtn">复制该画完整 Prompt</button>
+        <button type="button" class="ghost-btn" id="togglePromptBtn">展开提示词</button>
+      </div>
+
+      <pre class="prompt-drawer" id="promptDrawer"></pre>
+    </aside>
+  </main>
+
+  <section id="tetralogy" class="band">
+    <div class="band-inner">
+      <div class="band-header">
+        <h3>跨维度四部曲全览</h3>
+        <p>四幅 3:4 复古平涂海报分别将 Syoyo「BLEND ART」从二维人物服饰，升维至四维拓扑几何、超现实纪念碑建筑、宇宙引力场与东方大象无形哲思。点击任意一幅切入上方同色沉浸墙面。</p>
+      </div>
+      <div class="contact-sheet" id="contactSheet"></div>
+    </div>
+  </section>
+
+  <section id="grammar" class="grammar-band">
+    <div class="band-inner">
+      <div class="band-header">
+        <h3>9 大格式塔锚点：从人物穿搭到高维空间的转译法典</h3>
+        <p>画面成功的秘诀从不是“画得更像 3D”，而是克制地只选 2–3 个高反差结构锚点，让观者的大脑亲手在纯色虚空中雕出宏大实体。</p>
+      </div>
+
+      <div class="grammar-grid">
+        <div class="grammar-item">
+          <h4>端点截断</h4>
+          <p class="grammar-pair"><strong>原画：</strong>领口、袖口、波浪裙摆<br/><strong>高维：</strong>穹顶天窗、拱形海门、孤峰水际线</p>
+        </div>
+        <div class="grammar-item">
+          <h4>中轴序列</h4>
+          <p class="grammar-pair"><strong>原画：</strong>竖排纽扣、拉链、腰带<br/><strong>高维：</strong>随曲率透视收窄的拱窗列、悬空旋梯、天文刻度脊线</p>
+        </div>
+        <div class="grammar-item">
+          <h4>表面纹样场</h4>
+          <p class="grammar-pair"><strong>原画：</strong>波点裙、花卉刺绣、虚线明线<br/><strong>高维：</strong>隐形山体的古松与金缮裂纹、隐形星球的经纬点阵</p>
+        </div>
+        <div class="grammar-item">
+          <h4>硬边投影反刻</h4>
+          <p class="grammar-pair"><strong>原画：</strong>撑伞女孩侧后方的深棕投影<br/><strong>高维：</strong>隐形超立方体的焦茶几何长影、行星右下缘日蚀暗弧</p>
+        </div>
+        <div class="grammar-item">
+          <h4>介质倒影</h4>
+          <p class="grammar-pair"><strong>原画：</strong>同色绿水中的变形倒影与黑猫<br/><strong>高维：</strong>静水之下映出整座隐形巴别塔穹顶或圣山剪影</p>
+        </div>
+        <div class="grammar-item">
+          <h4>背景图纹遮断</h4>
+          <p class="grammar-pair"><strong>原画：</strong>WIND / RIBBON 斜字被裙摆裁断<br/><strong>高维：</strong>星图坐标网、斜向标尺与巨字在隐形边界干净切空</p>
+        </div>
+        <div class="grammar-item">
+          <h4>异物横切包裹</h4>
+          <p class="grammar-pair"><strong>原画：</strong>斜贴的黄色褶皱胶带、断桨<br/><strong>高维：</strong>紧裹隐形棱角的奶油折带、前穿后隐的双色行星环</p>
+        </div>
+        <div class="grammar-item">
+          <h4>外力形变骨架</h4>
+          <p class="grammar-pair"><strong>原画：</strong>风吹反折伞骨、飞离的草帽<br/><strong>高维：</strong>迎风猎猎的高塔双旗、穿梭虚空的轨道环</p>
+        </div>
+        <div class="grammar-item">
+          <h4>极微尺度参照</h4>
+          <p class="grammar-pair"><strong>原画：</strong>焦茶色厚底靴压住底部重心<br/><strong>高维：</strong>极微小的孤舟、盘旋飞鸟、七只游鹤，瞬间拉升百米/光年级体量</p>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <div class="formula-head">
+          <h4>可无限复用的 6 段式高维 BLEND ART 提示词母版</h4>
+          <button type="button" class="dark-btn" id="copyMasterBtn">复制通用母版</button>
+        </div>
+        <pre class="formula-code" id="masterFormula">Flat 2D mid-century editorial art poster illustration in the Coles Phillips and Syoyo BLEND ART fadeaway negative-space figure-ground merge style, Wes Anderson dead-center symmetrical composition, uniform fine matte vintage gouache print paper grain texture across the entire canvas, 3:4 vertical aspect ratio.
+
+The entire background is a completely flat, solid, unshaded [主底色 + Hex]. Centered monumentally in the frame is a colossal invisible [高维主体，如 4D monolith / Babel citadel / gas giant / sacred peak] whose entire body and outer surfaces are 100% the EXACT SAME flat [主底色] as the background—with ZERO outer contour lines, ZERO silhouette edges, ZERO tonal brightness separation, and ZERO gradient shading.
+
+The hidden monumental form is revealed ONLY through three surgical visual anchors drawn strictly in deep burnt-tea espresso brown (#2A1713) and warm ivory cream (#F6ECD7):
+1. [锚点 A：背景星图/网格遮断 或 水面完整倒影]
+2. [锚点 B：随曲率排布的窗列/刻度/古松/行星环前穿后隐]
+3. [锚点 C：焦茶色硬边投影 或 极微尺度孤舟/飞鸟]
+
+Strict vintage color discipline: strictly NO pure black (#000000), strictly NO pure white (#FFFFFF). NO closed outline around the subject, NO human figures, NO characters, NO 3D rendering, NO volumetric lighting, NO glowing neon, NO bloom, NO soft gradients, NO photorealism.</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <span>HigherDim BlendArt Studio · 设计法典、提示词工程与首批定稿画作均归档于本地工作区</span>
+      <span>支持键盘左右方向键切换展品 · 点击画作全屏细赏</span>
+    </div>
+  </footer>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-label="全屏查看作品">
+    <img id="lightboxImg" src="" alt="" />
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const WORKS = [
+      {
+        id: "babel",
+        tabLabel: "纪念碑建筑",
+        dimension: "维度 B · 超现实纪念碑建筑与阈限空间",
+        title: "虚空巴别塔",
+        en: "The Unseen Citadel",
+        image: "images/02_invisible_babel.jpg",
+        wall: "#79A69D",
+        theme: "light-wall",
+        epiphany: "第 1 秒，青绿色空域里悬浮着几排精巧拱窗、一段凭空旋上的楼梯与孤悬天际的塔尖旗帜；第 2 秒，目光垂落水面，完整巍峨的巨塔与穹顶赫然倒映在波纹之下；第 3 秒回望天空，整座通天巴别塔在空白处拔地而起。",
+        anchors: [
+          "介质倒影：水面之下浮现整座隐形巨塔与穹顶的深青色波纹倒影",
+          "中轴透视序列：拱窗向两侧隐形边缘自然收窄，暗示巨大圆柱曲率",
+          "外力与尺度锚：悬空旋梯消失于右侧边缘，微缩白帆与飞鸟拉满百米尺度"
+        ],
+        swatches: [
+          { name: "雾霭青底", hex: "#79A69D" },
+          { name: "水影深青", hex: "#4B817B" },
+          { name: "焦茶暗极", hex: "#2A1713" },
+          { name: "暖奶油亮极", hex: "#F6ECD7" }
+        ],
+        prompt: `Flat 2D mid-century editorial art poster illustration using the Coles Phillips and Syoyo BLEND ART fadeaway negative-space figure-ground merge technique, Wes Anderson dead-center symmetrical composition, uniform fine matte vintage lithograph paper grain texture across the entire canvas, 3:4 vertical aspect ratio.
+
+The entire background sky and tranquil sea are a single completely flat, solid, unshaded muted vintage sage-teal (#74ADA4). Rising monumentally along the central vertical axis from the lower water surface is a colossal invisible cylindrical Babel tower topped by a grand classical dome. Every single exterior wall, column surface, and dome face of the massive tower is 100% the EXACT SAME flat matte sage-teal (#74ADA4) as the sky—with ZERO exterior wall outlines, ZERO silhouette lines, and ZERO sky-to-stone color separation.
+
+The colossal invisible architecture is revealed ONLY through four poetic, razor-crisp graphic anchors drawn in deep burnt-tea espresso brown (#2A1713), warm ivory cream (#F6ECD7), and tiny warm ochre-terracotta (#D98A4E) accents:
+1. Waterline reflection: Beneath the calm water stretches a full, unmistakable, gently rippling darker-teal (#4B817B) inverted silhouette reflection of the ENTIRE colossal cylindrical tower and grand dome.
+2. Curved architectural anchors: Small crisp dark espresso-brown recessed arched windows arranged in gentle upward-curving rows, one bold arched sea-gate at the base waterline, and a delicate exterior spiraling staircase climbing upward and vanishing behind the invisible right cylinder edge.
+3. Summit crown & wind: A tiny ornate espresso-and-cream cupola finial with a long fluttering dark espresso-brown banner.
+4. Monumental scale cues: Minuscule warm ivory cream sailboats and tiny espresso-brown birds circling high around the invisible upper spire.
+
+NO outer wall contour lines on the tower, NO sky gradients, NO clouds, NO human figures, NO 3D rendering, NO pure black, NO pure white.`
+      },
+      {
+        id: "orbit",
+        tabLabel: "宇宙引力场",
+        dimension: "维度 C · 宇宙天文与不可见自然伟力",
+        title: "无形星体与引力潮汐",
+        en: "Gravity of the Void",
+        image: "images/03_silent_orbit.jpg",
+        wall: "#C45448",
+        theme: "dark-wall",
+        epiphany: "第 1 秒，陶土红古星图上斜贯一道精致的焦茶与奶油色星环；第 2 秒，发现光环后半段戛然而止，背景的放射经纬线与巨幅 GRAVITY 字母被一个庞大正圆整齐切空；第 3 秒，一颗质量惊人的隐形巨行星在画面中心产生真实引力压迫。",
+        anchors: [
+          "背景图纹遮断：浅粉星图网格与 GRAVITY 字母在隐形球体边界精准裁断",
+          "异物前穿后隐：双色行星环与细月轨正面横越、背面完全隐没于虚空",
+          "曲面波点与日蚀弧：奶油色经纬点阵标定球面曲率，右下缘一道焦茶暗弧定形"
+        ],
+        swatches: [
+          { name: "陶土红底", hex: "#C45448" },
+          { name: "星图浅粉", hex: "#DE7A74" },
+          { name: "焦茶暗极", hex: "#2B1612" },
+          { name: "暖奶油亮极", hex: "#F6ECD7" }
+        ],
+        prompt: `Flat 2D mid-century editorial art poster illustration using the Coles Phillips and Syoyo BLEND ART fadeaway negative-space figure-ground merge technique, Wes Anderson symmetrical centered composition, uniform fine matte vintage gouache print paper grain texture across the entire canvas, 3:4 vertical aspect ratio.
+
+The entire background is a completely flat, solid, unshaded muted vintage terracotta-coral red (#C95A57). Suspended monumentally just above dead center is a colossal invisible celestial planet sphere. The entire spherical body of the planet is 100% the EXACT SAME flat matte terracotta red (#C95A57) as the background—with ZERO circular outline, ZERO rim light, ZERO atmospheric glow, and ZERO spherical shading.
+
+The colossal invisible planet is revealed ONLY through four crisp graphic cues:
+1. Celestial chart & typography occlusion: Subtle pale-salmon (#DE7A74) antique astronomical gridlines and huge faint diagonal lettering reading "GRAVITY" cleanly masked out along the invisible circular planet silhouette.
+2. Wrapping planetary rings: Grand tilted concentric bands of deep espresso-brown (#2B1612) and warm ivory cream (#F6ECD7) sweeping across the front and terminating cleanly behind the invisible sphere.
+3. Spherical surface dots & thin eclipse crescent: Sparse curved warm-cream meridian dots and ONE single razor-thin flat espresso-brown crescent shadow along the lower-right rim curve.
+4. Orbiting moons: Two tiny moons tracing a crisp elliptical ink orbit around the invisible giant.
+
+NO outer circle outline around the planet, NO dark black space, NO glowing stars, NO 3D CGI render, NO pure black, NO pure white, NO human figures.`
+      },
+      {
+        id: "tesseract",
+        tabLabel: "四维拓扑几何",
+        dimension: "维度 A · 高维拓扑与时空几何",
+        title: "第四维度的折痕",
+        en: "The Fold of Dimension IV",
+        image: "images/01_tesseract_fold.jpg",
+        wall: "#EEB241",
+        theme: "light-wall",
+        epiphany: "第 1 秒，芥末黄画布上浮着一道 90 度折弯的奶油色纸带、四枚焦茶定位角标与精密刻度尺；第 2 秒，注意到浅金背景斜线在中途齐刷刷断在空气里，右下方投出嵌套式超立方体黑茶硬影；第 3 秒，一座无边界的四维巨构豁然悬浮眼前。",
+        anchors: [
+          "零轮廓网格遮断：浅金对角坐标线在隐形六边形边界直接断开，无任何闭合外框",
+          "异物折弯包裹：暖奶油宽带在隐形前棱处干脆折出 90 度直角，证明实体棱角存在",
+          "硬边投影反刻：右下方平涂焦茶色超立方体投影，直接揭示嵌套高维结构"
+        ],
+        swatches: [
+          { name: "芥末暖黄底", hex: "#EEB241" },
+          { name: "坐标浅金", hex: "#FCE09E" },
+          { name: "焦茶暗极", hex: "#2C1914" },
+          { name: "暖奶油折带", hex: "#F5EBD6" }
+        ],
+        prompt: `Flat 2D mid-century editorial art poster illustration using the Coles Phillips and Syoyo BLEND ART fadeaway negative-space figure-ground merge technique, Wes Anderson dead-center symmetrical composition, uniform fine matte vintage gouache print paper grain texture, 3:4 vertical aspect ratio.
+
+The entire background is completely flat, solid warm retro mustard yellow (#F6C365). Floating monumentally in the center is a colossal invisible 4D hypercube (tesseract monolith) filled with the EXACT SAME flat mustard yellow as the background—with ZERO outer contour lines and ZERO perimeter border whatsoever.
+
+Revealed ONLY through:
+1. Pure occlusion: Pale-gold (#FCE09E) diagonal geometric coordinate ruling lines and faint diagonal "DIMENSION IV" typography cleanly stopping where they meet the invisible monolith boundary (NO connecting outline).
+2. Hard-edged espresso-brown (#2C1914) geometric tesseract cast shadow offset to the lower right.
+3. Warm ivory cream (#F5EBD6) folded ribbon wrapping tightly around the invisible monolith with a crisp central 90-degree crease.
+4. Four tiny espresso corner brackets, vertical astronomical tick-marks down the front spine, and slender espresso-and-terracotta orbital rings.
+
+NO closed outline around the cube, NO human figures, NO 3D render, NO pure black, NO pure white.`
+      },
+      {
+        id: "peak",
+        tabLabel: "东方大象无形",
+        dimension: "维度 D · 东方哲思与器物文明",
+        title: "大象无形 · 孤峰",
+        en: "The Formless Peak",
+        image: "images/04_formless_peak.jpg",
+        wall: "#F8E9C9",
+        theme: "light-wall",
+        epiphany: "第 1 秒，一张无缝的暖奶油宣纸上，古松、金缮岩脉、微型朱砂亭阁与半轮红日静谧漂浮；第 2 秒，忽然察觉红日左侧被一条看不见的斜脊利落切开，静潭倒映着完整尖峰；第 3 秒，整座孤高圣山在留白中巍然成形——大象无形。",
+        anchors: [
+          "100% 零色差宣纸融合：山体内部与天空完全同色同纸纹，彻底隐去山峰边线",
+          "表面生态场与天体裁切：古松、金缮裂脉、朱砂亭与被隐形山脊半蚀的红日共同定形",
+          "静潭倒影与游鹤尺度：焦茶水际线下方映出苔绿山影，七只微鹤划过隐形峰顶"
+        ],
+        swatches: [
+          { name: "暖宣奶油底", hex: "#F8E9C9" },
+          { name: "苔藓黛绿", hex: "#5C6B3F" },
+          { name: "朱砂落日", hex: "#C6543A" },
+          { name: "焦茶墨色", hex: "#2B1811" }
+        ],
+        prompt: `Flat 2D mid-century editorial art poster illustration fusing Coles Phillips and Syoyo BLEND ART fadeaway negative-space technique with Eastern "Formless Greatness" (大象无形) Zen minimalism, Wes Anderson symmetrical composition, seamless borderless warm Japanese vintage ivory-cream textured paper (#F5ECD5), 3:4 vertical aspect ratio.
+
+Rising symmetrically in the center is a colossal invisible sacred mountain peak whose entire interior mass and outer slopes are 100% the EXACT SAME warm vintage ivory-cream color and paper grain as the surrounding sky—with ZERO outer mountain outline and ZERO tonal brightness difference from the sky.
+
+Revealed ONLY through four crisp flat anchors:
+1. Sparse flat hand-drawn dark-espresso and olive-moss pine trees, tiny muted-vermilion pavilion roofs, and fine antique ochre-gold kintsugi ridge fracture lines contained strictly inside the invisible mountain silhouette.
+2. A flat muted-vermilion (#C6543A) sun disc cleanly half-cut along a crisp diagonal line by the invisible upper-right mountain ridge.
+3. One narrow angular olive-espresso rock-facet shadow at the lower-right base, meeting a bold dark-espresso horizontal shoreline and a rippling olive-green triangular lake reflection below.
+4. Seven microscopic espresso-brown cranes arcing above the invisible peak and one tiny vermilion square seal in the top-left corner.
+
+NO mountain outline, NO white-vs-cream brightness edge, NO wet watercolor bleeding, NO fog, NO 3D render, NO pure black, NO pure white, NO human figures.`
+      }
+    ];
+
+    let activeIndex = 0;
+
+    const plateTabs = document.getElementById("plateTabs");
+    const contactSheet = document.getElementById("contactSheet");
+    const stageImg = document.getElementById("stageImg");
+    const posterWrap = document.getElementById("posterWrap");
+    const posterCaption = document.getElementById("posterCaption");
+    const dimTag = document.getElementById("dimTag");
+    const workTitle = document.getElementById("workTitle");
+    const workEn = document.getElementById("workEn");
+    const epiphanyText = document.getElementById("epiphanyText");
+    const anchorList = document.getElementById("anchorList");
+    const swatchList = document.getElementById("swatchList");
+    const promptDrawer = document.getElementById("promptDrawer");
+    const togglePromptBtn = document.getElementById("togglePromptBtn");
+    const copyPromptBtn = document.getElementById("copyPromptBtn");
+    const frameToggle = document.getElementById("frameToggle");
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightboxImg");
+    const toast = document.getElementById("toast");
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+
+    async function copyText(text, successMsg) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(successMsg);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast(successMsg);
+      }
+    }
+
+    function renderNavigation() {
+      plateTabs.innerHTML = "";
+      contactSheet.innerHTML = "";
+
+      WORKS.forEach((w, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "plate-tab";
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", idx === activeIndex ? "true" : "false");
+        btn.innerHTML = `<span class="tab-dot" style="background:${w.wall}"></span><span>${w.tabLabel}</span>`;
+        btn.addEventListener("click", () => selectWork(idx));
+        plateTabs.appendChild(btn);
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "sheet-item";
+        card.innerHTML = `
+          <div class="sheet-thumb"><img src="${w.image}" alt="${w.title}" loading="lazy" /></div>
+          <div class="sheet-title">${w.title}</div>
+          <div class="sheet-sub">${w.dimension}</div>
+        `;
+        card.addEventListener("click", () => {
+          selectWork(idx);
+          document.getElementById("stage").scrollIntoView({ behavior: "smooth" });
+        });
+        contactSheet.appendChild(card);
+      });
+    }
+
+    function selectWork(idx) {
+      activeIndex = (idx + WORKS.length) % WORKS.length;
+      const w = WORKS[activeIndex];
+
+      document.documentElement.style.setProperty("--wall", w.wall);
+      document.body.setAttribute("data-theme", w.theme);
+
+      stageImg.style.opacity = "0.25";
+      setTimeout(() => {
+        stageImg.src = w.image;
+        stageImg.alt = `${w.title} - ${w.en}`;
+        stageImg.style.opacity = "1";
+      }, 120);
+
+      dimTag.textContent = w.dimension;
+      workTitle.textContent = w.title;
+      workEn.textContent = w.en;
+      epiphanyText.textContent = w.epiphany;
+
+      anchorList.innerHTML = w.anchors.map(a => `<li>${a}</li>`).join("");
+
+      swatchList.innerHTML = "";
+      w.swatches.forEach(s => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "swatch";
+        b.title = `复制 ${s.name} ${s.hex}`;
+        b.innerHTML = `<span class="swatch-chip" style="background:${s.hex}"></span><span>${s.name} ${s.hex}</span>`;
+        b.addEventListener("click", () => copyText(s.hex, `已复制色值 ${s.hex}`));
+        swatchList.appendChild(b);
+      });
+
+      promptDrawer.textContent = w.prompt;
+
+      Array.from(plateTabs.children).forEach((el, i) => {
+        el.setAttribute("aria-selected", i === activeIndex ? "true" : "false");
+      });
+    }
+
+    togglePromptBtn.addEventListener("click", () => {
+      const isOpen = promptDrawer.classList.toggle("open");
+      togglePromptBtn.textContent = isOpen ? "收起提示词" : "展开提示词";
+    });
+
+    copyPromptBtn.addEventListener("click", () => {
+      copyText(WORKS[activeIndex].prompt, `已复制《${WORKS[activeIndex].title}》完整 Prompt`);
+    });
+
+    document.getElementById("copyMasterBtn").addEventListener("click", () => {
+      copyText(document.getElementById("masterFormula").textContent, "已复制通用 6 段式母版 Prompt");
+    });
+
+    frameToggle.addEventListener("click", () => {
+      const framed = posterWrap.classList.toggle("is-framed");
+      frameToggle.setAttribute("aria-pressed", framed ? "true" : "false");
+      frameToggle.textContent = framed ? "回到无界融合" : "装裱对照";
+      posterCaption.textContent = framed
+        ? "当前为美术馆装裱模式，可清晰查看 3:4 独立画幅比例（点击图像可放大）"
+        : "墙面色彩已同步至作品实测纸色，海报边界与空间自然融为一体（点击图像可放大细看）";
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => selectWork(activeIndex - 1));
+    document.getElementById("nextBtn").addEventListener("click", () => selectWork(activeIndex + 1));
+
+    posterWrap.addEventListener("click", () => {
+      lightboxImg.src = WORKS[activeIndex].image;
+      lightboxImg.alt = WORKS[activeIndex].title;
+      lightbox.classList.add("open");
+    });
+
+    lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") lightbox.classList.remove("open");
+      if (e.key === "ArrowLeft") selectWork(activeIndex - 1);
+      if (e.key === "ArrowRight") selectWork(activeIndex + 1);
+    });
+
+    renderNavigation();
+    selectWork(0);
+  </script>
+</body>
+</html>

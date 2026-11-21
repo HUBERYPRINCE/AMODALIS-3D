@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>空象视觉 · AMODALIS 3D (19 境)</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2379A69D'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%232A1713' stroke-width='4' stroke-dasharray='28 18'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23F6ECD7'/%3E%3C/svg%3E" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js",
+        "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --wall: #79A69D;
+      --ink: #241410;
+      --ink-soft: rgba(36, 20, 16, 0.62);
+      --glass-bg: linear-gradient(160deg, rgba(255, 254, 250, 0.52) 0%, rgba(255, 252, 245, 0.24) 55%, rgba(255, 254, 250, 0.38) 100%);
+      --glass-bar-bg: linear-gradient(180deg, rgba(255, 254, 250, 0.52) 0%, rgba(255, 252, 246, 0.30) 100%);
+      --glass-border: rgba(255, 255, 255, 0.62);
+      --glass-inner: rgba(255, 255, 255, 0.78);
+      --glass-shadow: 0 12px 34px rgba(36, 20, 16, 0.14), 0 2px 6px rgba(36, 20, 16, 0.06);
+      --serif: "Noto Serif SC", "Songti SC", "STSong", "Hiragino Mincho ProN", Georgia, serif;
+      --sans: "PingFang SC", "SF Pro Text", "Hiragino Sans GB", -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, monospace;
+      --spring: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Slightly denser frosted milky veil on richer pigments so translucent white glass stays luminous & AAA legible */
+    body[data-theme="dark-wall"] {
+      --glass-bg: linear-gradient(160deg, rgba(255, 254, 250, 0.64) 0%, rgba(255, 252, 245, 0.42) 55%, rgba(255, 254, 250, 0.54) 100%);
+      --glass-bar-bg: linear-gradient(180deg, rgba(255, 254, 250, 0.64) 0%, rgba(255, 252, 246, 0.46) 100%);
+      --glass-border: rgba(255, 255, 255, 0.72);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--wall);
+      color: var(--ink);
+      font-family: var(--sans);
+      transition: background-color 0.45s var(--spring);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      overscroll-behavior-x: none;
+    }
+
+    #canvas-mount {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #canvas-mount:active {
+      cursor: grabbing;
+    }
+
+    /* Subtle analog lithograph print tooth matching Syoyo / Coles Phillips */
+    .paper-grain {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.052;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ========================================================================
+     * LEFT-CENTER MINIMAL VERTICAL iOS LIQUID GLASS CAPSULE
+     * ====================================================================== */
+    .liquid-pill {
+      position: fixed;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px) saturate(185%) brightness(1.06);
+      -webkit-backdrop-filter: blur(28px) saturate(185%) brightness(1.06);
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        inset 0 1.5px 1px var(--glass-inner),
+        inset 0 -1px 2px rgba(36, 20, 16, 0.07),
+        var(--glass-shadow);
+      transition: background 0.45s var(--spring), transform 0.25s var(--spring);
+    }
+
+    .glass-icon-btn {
+      position: relative;
+      appearance: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background 0.22s var(--spring), transform 0.18s var(--spring), border-color 0.22s ease;
+    }
+
+    .glass-icon-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .glass-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.46);
+      border-color: rgba(255, 255, 255, 0.62);
+    }
+
+    .glass-icon-btn:active {
+      transform: scale(0.91);
+    }
+
+    .glass-icon-btn[aria-pressed="true"] {
+      background: rgba(36, 20, 16, 0.84);
+      color: #FAF2DE;
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.24), 0 4px 12px rgba(36, 20, 16, 0.20);
+    }
+
+    /* Tempo icon state switching */
+    .glass-icon-btn .ico-orbit,
+    .glass-icon-btn .ico-still { display: none; }
+    .glass-icon-btn[data-tempo="orbit"] .ico-breathe { display: none; }
+    .glass-icon-btn[data-tempo="orbit"] .ico-orbit { display: block; }
+    .glass-icon-btn[data-tempo="still"] .ico-breathe { display: none; }
+    .glass-icon-btn[data-tempo="still"] .ico-still { display: block; }
+
+    /* Whisper liquid-glass tooltip on hover */
+    .glass-tip {
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%) translateX(-4px);
+      white-space: nowrap;
+      font-size: 0.74rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.78);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.76);
+      box-shadow: 0 6px 18px rgba(36, 20, 16, 0.12);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.2s var(--spring);
+    }
+
+    .glass-icon-btn:hover .glass-tip,
+    .glass-icon-btn:focus-visible .glass-tip {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    /* ========================================================================
+     * BOTTOM-CENTER SINGLE-ROW ULTRA-SLIM TRANSLUCENT WHITE GLASS BAR
+     * ====================================================================== */
+    .bottom-dock {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100vw - 28px);
+    }
+
+    .bottom-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+      padding: 0 12px 0 8px;
+      border-radius: 999px;
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(28px) saturate(180%) brightness(1.06);
+      -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.06);
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        inset 0 1px 0.5px var(--glass-inner),
+        inset 0 -1px 1px rgba(36, 20, 16, 0.05),
+        var(--glass-shadow);
+      cursor: ew-resize;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .nav-arrow {
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-size: 1rem;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background 0.18s ease, transform 0.14s ease;
+    }
+
+    .nav-arrow:hover {
+      background: rgba(255, 255, 255, 0.48);
+    }
+
+    .nav-arrow:active {
+      transform: scale(0.88);
+    }
+
+    .scene-trigger {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+      padding: 4px 6px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.18s ease;
+    }
+
+    .scene-trigger:hover {
+      background: rgba(255, 255, 255, 0.36);
+    }
+
+    .scene-idx {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--ink-soft);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scene-name {
+      font-family: var(--serif);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .strip-divider {
+      width: 1px;
+      height: 15px;
+      background: rgba(36, 20, 16, 0.18);
+      flex-shrink: 0;
+    }
+
+    .telemetry-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 0.71rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-soft);
+      padding-right: 2px;
+    }
+
+    .t-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .t-item strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .pigment-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.18s var(--spring);
+      flex-shrink: 0;
+    }
+
+    .pigment-btn:hover {
+      transform: scale(1.18);
+    }
+
+    .pigment-chip {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 0 0 1px rgba(36, 20, 16, 0.22);
+    }
+
+    /* ========================================================================
+     * 19-WORLD MICRO-INDEX LIQUID-GLASS POPOVER (Floats above bottom bar)
+     * ====================================================================== */
+    .index-popover {
+      width: min(760px, calc(100vw - 32px));
+      max-height: min(52vh, 380px);
+      overflow-y: auto;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 253, 248, 0.74);
+      backdrop-filter: blur(32px) saturate(185%) brightness(1.05);
+      -webkit-backdrop-filter: blur(32px) saturate(185%) brightness(1.05);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.85),
+        0 20px 54px rgba(36, 20, 16, 0.18);
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+      pointer-events: none;
+      transition: opacity 0.24s var(--spring), transform 0.28s var(--spring);
+    }
+
+    .index-popover.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .index-popover::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .index-popover::-webkit-scrollbar-thumb {
+      background: rgba(36, 20, 16, 0.18);
+      border-radius: 99px;
+    }
+
+    .index-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 6px 10px;
+      border-bottom: 1px solid rgba(36, 20, 16, 0.1);
+      margin-bottom: 10px;
+      font-size: 0.76rem;
+      color: var(--ink-soft);
+    }
+
+    .index-head a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(36, 20, 16, 0.28);
+      padding-bottom: 1px;
+    }
+
+    .index-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 6px;
+    }
+
+    .idx-item {
+      appearance: none;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.34);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 7px 10px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      transition: background 0.16s ease, border-color 0.16s ease, transform 0.15s ease;
+    }
+
+    .idx-item:hover {
+      background: rgba(255, 255, 255, 0.68);
+      border-color: rgba(255, 255, 255, 0.85);
+    }
+
+    .idx-item[aria-current="true"] {
+      background: rgba(36, 20, 16, 0.86);
+      color: #FAF2DE;
+    }
+
+    .idx-item[aria-current="true"] .idx-num {
+      color: rgba(250, 242, 222, 0.68);
+    }
+
+    .idx-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(36, 20, 16, 0.22);
+    }
+
+    .idx-meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .idx-num {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--ink-soft);
+    }
+
+    .idx-title {
+      font-family: var(--serif);
+      font-size: 0.82rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Epiphany Director Whisper Pill */
+    .epiphany-toast {
+      position: fixed;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      z-index: 25;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.72);
+      backdrop-filter: blur(26px) saturate(170%);
+      -webkit-backdrop-filter: blur(26px) saturate(170%);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      box-shadow: var(--glass-shadow);
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s var(--spring);
+      max-width: calc(100vw - 32px);
+    }
+
+    .epiphany-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .epiphany-phase {
+      font-family: var(--serif);
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .epiphany-sub {
+      font-size: 0.75rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Subtle Copy/Action Toast */
+    .toast {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      z-index: 30;
+      padding: 6px 15px;
+      border-radius: 999px;
+      background: rgba(36, 20, 16, 0.82);
+      color: #FAF2DE;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      font-size: 0.76rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.24s var(--spring);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 720px) {
+      .liquid-pill {
+        left: 10px;
+        padding: 5px;
+      }
+      .glass-icon-btn {
+        width: 30px;
+        height: 30px;
+      }
+      .bottom-strip {
+        height: 36px;
+        gap: 6px;
+        padding: 0 9px 0 5px;
+      }
+      .telemetry-strip {
+        gap: 7px;
+        font-size: 0.65rem;
+      }
+      .t-hide-sm {
+        display: none;
+      }
+      .scene-name {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-mount"></div>
+  <div class="paper-grain" aria-hidden="true"></div>
+
+  <!-- Left-Middle Minimal Vertical iOS Liquid Glass Capsule -->
+  <nav class="liquid-pill" aria-label="极简视觉控制">
+    <button type="button" class="glass-icon-btn" id="btnXray" aria-pressed="false" aria-label="X-Ray 深度壳揭秘">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+        <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+      </svg>
+      <span class="glass-tip">X-Ray 揭秘 (X)</span>
+    </button>
+
+    <button type="button" class="glass-icon-btn" id="btnEpiphany" aria-pressed="false" aria-label="3 秒顿悟演示">
+      <svg viewBox="0 0 24 24">
+        <path d="M2.5 12s3.8-6.5 9.5-6.5S21.5 12 21.5 12s-3.8 6.5-9.5 6.5S2.5 12 2.5 12z" />
+        <circle cx="12" cy="12" r="2.6" />
+      </svg>
+      <span class="glass-tip">3 秒顿悟演示 (E)</span>
+    </button>
+
+    <button type="button" class="glass-icon-btn" id="btnTempo" data-tempo="breathe" aria-pressed="false" aria-label="切换动态节律">
+      <svg class="ico-breathe" viewBox="0 0 24 24">
+        <path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" />
+      </svg>
+      <svg class="ico-orbit" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(-24 12 12)" />
+        <circle cx="12" cy="12" r="2" />
+      </svg>
+      <svg class="ico-still" viewBox="0 0 24 24">
+        <line x1="9" y1="6.5" x2="9" y2="17.5" />
+        <line x1="15" y1="6.5" x2="15" y2="17.5" />
+      </svg>
+      <span class="glass-tip" id="tempoTooltip">节律 · 呼吸微动</span>
+    </button>
+
+    <button type="button" class="glass-icon-btn" id="btnExport" aria-label="导出静帧 PNG">
+      <svg viewBox="0 0 24 24">
+        <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      <span class="glass-tip">导出高清静帧</span>
+    </button>
+  </nav>
+
+  <!-- Epiphany Live Stage Whisper Pill -->
+  <div class="epiphany-toast" id="epiphanyToast" role="status">
+    <span class="epiphany-phase" id="epiphanyPhase"></span>
+    <span class="epiphany-sub" id="epiphanySub"></span>
+  </div>
+
+  <!-- Bottom-Center Minimal Translucent White Glass Bar + 19-World Popover -->
+  <div class="bottom-dock">
+    <div class="index-popover" id="indexPopover" role="dialog" aria-label="19 个高维空象场景目录">
+      <div class="index-head">
+        <span>空象视觉 · AMODALIS 19 境（支持双指左右轻扫 / 底部条滑动 / 方向键切换）</span>
+        <a href="./gallery.html">静态海报展厅</a>
+      </div>
+      <div class="index-grid" id="indexGrid"></div>
+    </div>
+
+    <div class="bottom-strip" id="bottomBar" title="左右拖动或双指轻扫切换 19 境">
+      <button type="button" class="nav-arrow" id="btnPrev" aria-label="上一境">‹</button>
+      <button type="button" class="scene-trigger" id="sceneTrigger" aria-expanded="false" aria-label="展开 19 境目录">
+        <span class="scene-idx" id="sceneIndex">01/19</span>
+        <span class="scene-name" id="sceneName">虚空巴别塔</span>
+      </button>
+      <button type="button" class="nav-arrow" id="btnNext" aria-label="下一境">›</button>
+
+      <span class="strip-divider" aria-hidden="true"></span>
+
+      <div class="telemetry-strip" aria-label="实时视皮层遥测">
+        <span class="t-item">V2 <strong id="mV2">96</strong></span>
+        <span class="t-item">AMOD <strong id="mAmod">100</strong></span>
+        <span class="t-item t-hide-sm">MT <strong id="mMT">82</strong></span>
+        <span class="t-item t-hide-sm">SfM <strong id="mSfM">78</strong></span>
+      </div>
+
+      <button type="button" class="pigment-btn" id="pigmentDotBtn" aria-label="复制当前底色">
+        <span class="pigment-chip" id="pigmentChip"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./engine/app.js"></script>
+</body>
+</html>
